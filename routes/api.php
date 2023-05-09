@@ -8,6 +8,7 @@ use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\LoanController;
 use App\Http\Controllers\API\AdminController;
 use App\Http\Controllers\API\AccountingController;
+use App\Http\Controllers\API\SavingsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -29,15 +30,24 @@ Route::prefix('user')->group(function () {
     });
 });
 
-Route::prefix('loan')->group(function () {
-    Route::controller(LoanController::class)->group(function () {
-        Route::post('simulation', 'simulation');
+Route::prefix('savings')->group(function () {
+    Route::controller(SavingsController::class)->group(function () {
+        Route::get('info', 'checkSavingInfo');
     });
 });
 
-Route::prefix('admin')->group(function () {
-    Route::controller(AdminController::class)->group(function () {
-        Route::post('transactions', 'transactions');
+Route::prefix('loan')->group(function () {
+    Route::controller(LoanController::class)->group(function () {
+        Route::post('simulation', 'simulationLoan');
+        Route::post('request', 'requestLoan');
+    });
+});
+
+Route::group(['middleware' => ['admin']], function () {
+    Route::prefix('admin')->group(function () {
+        Route::controller(AdminController::class)->group(function () {
+            Route::post('transactions', 'transactions');
+        });
     });
 });
 

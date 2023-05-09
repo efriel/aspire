@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('account_name');
             $table->integer('limit');
             $table->integer('tenor');
+            $table->integer('gl_code');
         });
     }
 

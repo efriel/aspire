@@ -5,14 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class AccountSavings extends Model
+class TransactionDebit extends Model
 {
     /**
      * The table associated with the model.
      *
      * @var string
      */
-    protected $table = 'account_savings';
+    protected $table = 'transaction_debit';
 
     /**
      * The attributes that are mass assignable.
@@ -20,10 +20,11 @@ class AccountSavings extends Model
      * @var array<int, string>
      */
     protected $fillable = [
+        'transaction_id',
         'account_number',
-        'account_type_id',
         'customer_id',
-        'day_term',
-        'code',
+        'total',
+        'staff_id',
+        'code'
     ];
 }

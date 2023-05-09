@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('account_name');
             $table->integer('balance_minimum');
+            $table->integer('gl_code');
         });
     }
 
