@@ -19,5 +19,10 @@ class IsAdmin
         if (Auth::user() &&  Auth::user()->role_id !== 1) {
               return $next($request);
         }
+        return response()->json([
+            "success" => false,
+            "data" => [],
+            "message" => 'Unauthorized'
+        ]);
     }
 }
