@@ -50,11 +50,3 @@ Route::group(['middleware' => ['admin']], function () {
         });
     });
 });
-
-Route::group(['middleware' => ['admin']], function () {
-    Route::prefix('accounting')->group(function () {
-        Route::controller(AccountingController::class)->group(function () {
-            Route::post('transactions', 'transactions');
-        });
-    });
-});

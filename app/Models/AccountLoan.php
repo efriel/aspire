@@ -7,5 +7,24 @@ use Illuminate\Database\Eloquent\Model;
 
 class AccountLoan extends Model
 {
-    use HasFactory;
+    /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'account_loan';
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'account_number',
+        'account_type_id',
+        'customer_id',
+        'day_term',
+        'installment',
+        'code',
+    ];
 }

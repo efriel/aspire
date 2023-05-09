@@ -3,11 +3,13 @@
 namespace App\Repositories;
 
 use App\Repositories\Interfaces\TransactionRepositoryInterface;
+use App\Models\MasterLoan;
 use App\Models\TransactionDebit;
 use App\Models\TransactionDebitDetail;
 use App\Models\TransactionCredit;
 use App\Models\TransactionCreditDetail;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Collection;
 
 class TransactionRepository implements TransactionRepositoryInterface 
 {
@@ -40,27 +42,80 @@ class TransactionRepository implements TransactionRepositoryInterface
         return $debit-$credit;
     }
 
-    public function insertTransaction($savingsInfo)
+    public function insertDebit($transactionInfo)
     {
         $transaction_id = time();
         // save to transaction
         $debit = new TransactionDebit;
         $debit->transaction_id = $transaction_id;
-        $debit->account_number = $savingsInfo->account_number;
-        $debit->customer_id = $savingsInfo->customer_id;
-        $debit->total = $savingsInfo->total;
-        $debit->staff_id = $savingsInfo->staff_id;
-        $debit->code = $savingsInfo->code;
+        $debit->account_number = $transactionInfo->account_number;
+        $debit->customer_id = $transactionInfo->customer_id;
+        $debit->total = $transactionInfo->total;
+        $debit->staff_id = $transactionInfo->staff_id;
+        $debit->code = $transactionInfo->code;
         $debit->save();
 
         // save to transaction
         $detail = new TransactionDebitDetail;
         $detail->transaction_id = $transaction_id;
-        $detail->gl_code = $savingsInfo->gl_code;
-        $detail->amount = $savingsInfo->amount;
+        $detail->gl_code = $transactionInfo->gl_code;
+        $detail->amount = $transactionInfo->amount;
         $detail->save();
 
         return $debit;
     }
 
+    public function insertCredit($transactionInfo)
+    {
+        $transaction_id = time();
+        // save to transaction
+        $debit = new TransactionCredit;
+        $debit->transaction_id = $transaction_id;
+        $debit->account_number = $transactionInfo->account_number;
+        $debit->customer_id = $transactionInfo->customer_id;
+        $debit->total = $transactionInfo->total;
+        $debit->staff_id = $transactionInfo->staff_id;
+        $debit->code = $transactionInfo->code;
+        $debit->save();
+
+        // save to transaction
+        $detail = new TransactionCreditDetail;
+        $detail->transaction_id = $transaction_id;
+        $detail->gl_code = $transactionInfo->gl_code;
+        $detail->amount = $transactionInfo->amount;
+        $detail->save();
+
+        return $debit;
+    }
+
+    public function getMasterLoanByLimit($limit)
+    {
+        return MasterLoan::where('limit', '>=', $limit)->orderBy('limit', 'ASC')->first();
+    }
+
+    public function getLoanSimulation($request, $tenor)
+    {
+        $simulation = new Collection();
+        $amount = $request->amount;
+        $installment = round($amount/$tenor, 2);
+        $dayterm = $request->dayterm;
+        $date = strtotime(date("Ymd"));
+        $newInstallment = 0;
+        for ($i = 1; $i < $tenor; $i++){  
+            $date = strtotime("+7 day", $date);
+            $duedate = date('jS F Y', $date);
+            $simulation->push((object)[
+                'date' => $duedate, 
+                'amount' => number_format($installment, 2)
+            ]);
+            $newInstallment += $installment;
+        }
+        $date = strtotime("+7 day", $date);
+        $duedate = date('jS F Y', $date);
+        $simulation->push((object)[
+            'date' => $duedate, 
+            'amount' => number_format($amount-$newInstallment, 2)
+        ]);
+        return $simulation;
+    }
 }

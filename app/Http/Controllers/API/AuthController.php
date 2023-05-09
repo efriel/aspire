@@ -65,16 +65,20 @@ class AuthController extends Controller
 
         // create user id 
         $user_id = mt_rand(100,999);
+        
         // create new user record
         $user = $this->customerRepository->userCreate($request, $user_id);
+
         // create new customer profile record
         $customer = $this->customerRepository->customerCreate($request, $user_id); 
+
         // create savings account record
         $savingsCreate = $this->customerRepository->accountSavingsCreate($user_id);
+
         // get savings info
         $savingsInfo = $this->customerRepository->getSavingsInfo($user_id);
-        // initial savings deposit
 
+        // initial savings deposit
         $savingsData = (object) array(
             'account_number' => $savingsInfo->account_number,
             'customer_id' => $user_id,
@@ -85,7 +89,7 @@ class AuthController extends Controller
             'amount' => $savingsInfo->balance_minimum
         );
 
-        $insertTransaction = $this->transactionRepository->insertTransaction($savingsData);
+        $insertDebit = $this->transactionRepository->insertDebit($savingsData);
 
 
         return response()->json([
