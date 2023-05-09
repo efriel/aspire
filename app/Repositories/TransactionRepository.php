@@ -118,4 +118,37 @@ class TransactionRepository implements TransactionRepositoryInterface
         ]);
         return $simulation;
     }
+
+    public function getTransactionList() 
+    { 
+        return DB::table('transaction_debit as t')->join('transaction_debit_detail as d', 'd.transaction_id', '=', 't.transaction_id')
+                ->join('master_code as c', 'c.code', '=', 't.code')
+                ->union(
+                    DB::table('transaction_credit as t')
+                    ->join('transaction_credit_detail as d', 'd.transaction_id', '=', 't.transaction_id')
+                    ->join('master_code as c', 'c.code', '=', 't.code')
+                )->get();
+    }
+
+    public function approveTransaction($transactionId)
+    {
+        TransactionDebit::where('transaction_id', $transactionId)
+            ->update(['code' => 'H']);
+        TransactionCredit::where('transaction_id', $transactionId)
+            ->update(['code' => 'H']);
+
+    }
+
+    public function getTransaction($transactionId) 
+    { 
+        return DB::table('transaction_debit as t')->join('transaction_debit_detail as d', 'd.transaction_id', '=', 't.transaction_id')
+                ->join('master_code as c', 'c.code', '=', 't.code')
+                ->where('t.transaction_id', '=', $transactionId)
+                ->union(
+                    DB::table('transaction_credit as t')
+                    ->join('transaction_credit_detail as d', 'd.transaction_id', '=', 't.transaction_id')
+                    ->join('master_code as c', 'c.code', '=', 't.code')
+                    ->where('t.transaction_id', '=', $transactionId)
+                )->get();
+    }
 }

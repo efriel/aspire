@@ -46,7 +46,8 @@ Route::prefix('loan')->group(function () {
 Route::group(['middleware' => ['admin']], function () {
     Route::prefix('admin')->group(function () {
         Route::controller(AdminController::class)->group(function () {
-            Route::post('transactions', 'transactions');
+            Route::post('transactions', 'transactionList');
+            Route::post('approve', 'approve');
         });
     });
 });

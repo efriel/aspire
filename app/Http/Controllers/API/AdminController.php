@@ -24,11 +24,30 @@ class AdminController extends Controller
 
     public function transactionList()
     {
-        // $transactionList = $this->transactionRepository->getTransactionList();
-
+        $transactionList = $this->transactionRepository->getTransactionList();
         return response()->json([
             "success" => true,
-            "data" => [],
+            "data" => [
+                "transactions" => $transactionList
+            ],
+            "message" => 'Success'
+        ]);
+    }
+
+    public function approve(Request $request)
+    {
+        $request->validate([
+            'transaction_id' => 'required|numeric',
+        ]);
+
+        $this->transactionRepository->approveTransaction($request->transaction_id);
+        $transaction = $this->transactionRepository->getTransaction($request->transaction_id);
+        return response()->json([
+            "success" => true,
+            "data" => [
+                "transaction_id" => $request->transaction_id,
+                "transaction" => $transaction
+            ],
             "message" => 'Success'
         ]);
     }
