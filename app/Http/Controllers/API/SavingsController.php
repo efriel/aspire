@@ -26,7 +26,7 @@ class SavingsController extends Controller
         $user = Auth::user();
         $user_id = $user->id;
         $savings = $this->customerRepository->getSavingsInfo($user_id);
-        $savingsBalances = $this->transactionRepository->getBalacesAmountTotal($user_id, $savings->account_number, $savings->gl_code);
+        $savingsBalances = $this->transactionRepository->getBalancesAmountTotal($user_id, $savings->account_number, $savings->gl_code);
         
         return response()->json([
             "success" => true,

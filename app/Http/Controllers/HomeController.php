@@ -13,7 +13,7 @@ class HomeController extends Controller
      */
     public function __construct()
     {
-        $this->middleware('auth');
+
     }
 
     /**
@@ -26,7 +26,7 @@ class HomeController extends Controller
         return response()->json([
             "success" => false,
             "data" => [],
-            "message" => 'error response'
+            "message" => 'Unauthorized'
         ]);
     }
 }

@@ -40,6 +40,8 @@ Route::prefix('loan')->group(function () {
     Route::controller(LoanController::class)->group(function () {
         Route::post('simulation', 'simulationLoan');
         Route::post('request', 'requestLoan');
+        Route::get('info', 'checkLoanInfo');
+        Route::post('repayment', 'repaymentLoan');
     });
 });
 

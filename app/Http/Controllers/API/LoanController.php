@@ -139,4 +139,84 @@ class LoanController extends Controller
             "message" => 'beyond credit limit'
         ]);
     }
+
+    public function checkLoanInfo()
+    {
+        $user = Auth::user();
+        $user_id = $user->id;
+        $loanBalances = 0;
+        $installment = 0;
+        $loanInfo = $this->customerRepository->getLoanInfo($user_id);
+        if ($loanInfo) {
+            $initialBalances = $this->transactionRepository->getCreditAmountTotal($user_id, $loanInfo->account_number, $loanInfo->gl_code);
+            $loanBalances = $this->transactionRepository->getBalancesAmountTotalCredit($user_id, $loanInfo->account_number, $loanInfo->gl_code);
+
+            $request = (object) array(
+                'amount' => $initialBalances,
+                'day_term' => $loanInfo->day_term,
+                'date' =>  $loanInfo->created_at,
+                'tenor' => $loanInfo->tenor,
+                'installment' => $loanInfo->installment,
+                'customer_id' =>  $loanInfo->customer_id,
+                'account_number' => $loanInfo->account_number,
+                'loan_balances' => $loanBalances,
+            );
+            $installmentInfo = $this->transactionRepository->getInstallmentInfo($request);
+        } else {
+            $installmentInfo = [];
+            $loanInfo = [];
+        }
+        
+        return response()->json([
+            "success" => true,
+            "data" => [
+                "user" => $user,
+                "loan" => $loanInfo,
+                "balances" => $loanBalances,
+                "installment" => $installmentInfo,
+            ],
+            "message" => 'Success'
+        ]);
+    }
+
+    public function repaymentLoan(Request $request)
+    {
+        $request->validate([
+            'amount' => 'required|numeric',
+        ]);
+        $user = Auth::user();
+        $user_id = $user->id;
+
+        // get loan info
+        $loanInfo = $this->customerRepository->getLoanInfo($user_id);
+
+        // initial savings deposit
+        $loanData = (object) array(
+            'account_number' => $loanInfo->account_number,
+            'customer_id' => $user_id,
+            'total' => $request->amount,
+            'staff_id' => 1,
+            'code' => 'I',
+            'gl_code' => $loanInfo->gl_code,
+            'amount' => $request->amount
+        );
+
+        $insertDebit = $this->transactionRepository->insertDebit($loanData);
+        $updateInstallment = $this->transactionRepository->updateLoanAccountInstallment($loanInfo->account_number);
+
+        $loanBalances = $this->transactionRepository->getBalancesAmountTotal($user_id, $loanInfo->account_number, $loanInfo->gl_code);
+        if ($loanBalances >= 0){
+            $isPaid = $this->transactionRepository->setLoanPaid($loanInfo->account_number); 
+        }
+        return response()->json([
+            "success" => true,
+            "data" => [
+                "user" => $user,
+                "loan" => $loanInfo,
+            ],
+            "message" => 'Success'
+        ]);
+        
+
+    }
 }

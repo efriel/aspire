@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Repositories\Interfaces\TransactionRepositoryInterface;
 use App\Models\MasterLoan;
+use App\Models\AccountLoan;
 use App\Models\TransactionDebit;
 use App\Models\TransactionDebitDetail;
 use App\Models\TransactionCredit;
@@ -35,11 +36,18 @@ class TransactionRepository implements TransactionRepositoryInterface
             ->sum('d.amount');
     }
 
-    public function getBalacesAmountTotal($customer_id, $account_number, $gl_code) 
+    public function getBalancesAmountTotal($customer_id, $account_number, $gl_code) 
     {
         $debit = $this->getDebitAmountTotal($customer_id, $account_number, $gl_code);
         $credit = $this->getCreditAmountTotal($customer_id, $account_number, $gl_code);
         return $debit-$credit;
+    }
+
+    public function getBalancesAmountTotalCredit($customer_id, $account_number, $gl_code) 
+    {
+        $debit = $this->getDebitAmountTotal($customer_id, $account_number, $gl_code);
+        $credit = $this->getCreditAmountTotal($customer_id, $account_number, $gl_code);
+        return $credit-$debit;
     }
 
     public function insertDebit($transactionInfo)
@@ -102,7 +110,7 @@ class TransactionRepository implements TransactionRepositoryInterface
         $date = strtotime(date("Ymd"));
         $newInstallment = 0;
         for ($i = 1; $i < $tenor; $i++){  
-            $date = strtotime("+7 day", $date);
+            $date = strtotime("+".$dayterm." day", $date);
             $duedate = date('jS F Y', $date);
             $simulation->push((object)[
                 'date' => $duedate, 
@@ -110,7 +118,7 @@ class TransactionRepository implements TransactionRepositoryInterface
             ]);
             $newInstallment += $installment;
         }
-        $date = strtotime("+7 day", $date);
+        $date = strtotime("+".$dayterm." day", $date);
         $duedate = date('jS F Y', $date);
         $simulation->push((object)[
             'date' => $duedate, 
@@ -123,10 +131,12 @@ class TransactionRepository implements TransactionRepositoryInterface
     { 
         return DB::table('transaction_debit as t')->join('transaction_debit_detail as d', 'd.transaction_id', '=', 't.transaction_id')
                 ->join('master_code as c', 'c.code', '=', 't.code')
+                ->whereNotIn('t.code', ['H', 'I', 'J'])
                 ->union(
                     DB::table('transaction_credit as t')
                     ->join('transaction_credit_detail as d', 'd.transaction_id', '=', 't.transaction_id')
                     ->join('master_code as c', 'c.code', '=', 't.code')
+                    ->whereNotIn('t.code', ['H', 'I', 'J'])
                 )->get();
     }
 
@@ -137,6 +147,11 @@ class TransactionRepository implements TransactionRepositoryInterface
         TransactionCredit::where('transaction_id', $transactionId)
             ->update(['code' => 'H']);
 
+        $loanTransaction = TransactionCredit::where('transaction_id', $transactionId)->first();
+        if ($loanTransaction){
+            AccountLoan::where('account_number', $loanTransaction->account_number)
+            ->update(['code' => 'J']);
+        }
     }
 
     public function getTransaction($transactionId) 
@@ -151,4 +166,59 @@ class TransactionRepository implements TransactionRepositoryInterface
                     ->where('t.transaction_id', '=', $transactionId)
                 )->get();
     }
+
+    public function getInstallmentInfo($request)
+    {
+        $amount = $request->amount;
+        $day_term = $request->day_term;
+        $date = strtotime($request->date);
+        $tenor = $request->tenor;
+        $installmentNo = $request->installment+1;
+        $customer_id = $request->customer_id;
+        $account_number = $request->account_number;
+        $loan_balances = $request->loan_balances;
+
+        $installmentPay = round($amount/$tenor, 2);
+        $newInstallment = 0;
+        $isFinalRepayment = true;
+        for ($i = 1; $i < $tenor; $i++){  
+            $date = strtotime("+".$day_term." day", $date);
+            $duedate = date('jS F Y', $date);
+            $newInstallment += $installmentPay;
+            if ($installmentNo===$i){
+                $installment_pay = number_format($installmentPay, 2);
+                $installment_duedate = $duedate;
+                $isFinalRepayment = false;
+            }
+        }
+        if ($isFinalRepayment) {
+            $date = strtotime("+".$day_term." day", $date);
+            $duedate = date('jS F Y', $date);
+            $installment_duedate = $duedate;
+            $installment_pay = number_format($loan_balances, 2);
+        }
+        
+        $response = (object) array(
+            'installment_no' => $installmentNo,
+            'installment_pay' => $installment_pay,
+            'installment_duedate' =>  $installment_duedate,
+        );
+        return $response;
+    }
+
+    public function setLoanPaid($accountNumber)
+    {
+        AccountLoan::where('account_number', $accountNumber)
+        ->update(['code' => 'I']);   
+    }
+
+    public function updateLoanAccountInstallment($accountNumber)
+    {
+        AccountLoan::where('account_number', $accountNumber)
+        ->update([
+            'installment' => DB::raw('installment + 1')
+        ]);
+    }
+
+    
 }
