@@ -4,7 +4,8 @@
 Mini Aspire API (Savings and Loan API Application)
 Application Flow and Database references taken from My Previous project for Cooperative Banking in Bandung Indonesia
 
-## Import postman collections from app root directory first
+## Import aspire.sql from the app root directory to the mariadb
+## Import postman collections from the app root directory first
 ### All POST/GET Request using Postman
 
 ## 1. Register User
